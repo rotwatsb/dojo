@@ -5,7 +5,8 @@ let rec int_list strlist =
   match strlist with
   | x::xs -> if x <> ";;" then (int_of_string x)::(int_list xs) else []
   | [] -> []
-		    
+
+(* read triangle into lists *)
 let rec get_lists chan lists =
   try
     get_lists chan ((int_list (Str.split (Str.regexp " ") (String.trim (input_line chan))))::lists)
@@ -17,6 +18,7 @@ let rec make_triangle lists triangle i =
 	     make_triangle xs triangle (i - 1)
   | [] -> ()
 
+(* calculate score from the bottom up, memoizing from the top down *)
 let rec max_score triangle row col hshtbl =
   try
     Hashtbl.find hshtbl (row, col)
@@ -31,7 +33,7 @@ let rec max_score triangle row col hshtbl =
     v + best_prev_score
 	       
 
-let prob67 file =
+let prob67_arrays file =
   let chan = open_in file in
   let lists = get_lists chan [] in
   let triangle = Array.make 100 (Array.make 100 0) in
@@ -46,4 +48,32 @@ let prob67 file =
 				(Array.get triangle 99)
 				(min_int, 0) in
   m
+
+
+let rec reduce_row row =
+  match row with
+  | x1::x2::xs -> (max x1 x2)::(reduce_row (x2::xs))
+  | _ -> []
+
+let merge lower_row upper_row =
+  List.fold_right2 (fun l u a -> (l + u)::a) lower_row upper_row []
+
+(* calcluate scores from top down, memoizing from bototm up *)
+let rec max_score_lists lists =
+  match lists with
+  | bottom::oneup::ups -> max_score_lists ((merge (reduce_row bottom) oneup)::ups)
+  | x::[] -> (match x with
+	      | y::[] -> y
+	      | _ -> 0)
+  | _ -> 0
+
+(* immutable solution using lists *)
+let prob67_lists file =
+  let chan = open_in file in
+  let lists = get_lists chan [] in
+  max_score_lists lists
+
+
+		    
+	       
 
